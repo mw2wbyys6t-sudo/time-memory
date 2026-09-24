@@ -17,6 +17,7 @@
             class="media-item"
             :src="img"
             mode="widthFix"
+            @tap="previewImage(index)"
           />
         </view>
         <view v-if="tags.length" class="tag-row">
@@ -58,6 +59,9 @@ export default {
   },
   methods: {
     formatDate,
+    previewImage(index) {
+      uni.previewImage({ urls: this.images, current: this.images[index] })
+    },
     async loadRecord() {
       try {
         const res = await callFunction('record', { action: 'get', id: this.id })

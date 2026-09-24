@@ -56,7 +56,8 @@ function normalizeTime(value) {
 async function list(event) {
   const limit = Math.min(Number(event.limit) || 30, 100)
   const skip = Number(event.skip) || 0
-  const where = {}
+  const openid = cloud.getWXContext().OPENID
+  const where = { _openid: openid }
   if (event.type) where.type = event.type
   if (event.tag) where.tags = _.all([event.tag])
 
@@ -76,8 +77,16 @@ async function list(event) {
 
 async function get(event) {
   if (!event.id) return fail('缺少记录 id')
-  const res = await db.collection(RECORDS).doc(event.id).get()
-  const data = await attachImages([res.data])
+  const openid = cloud.getWXContext().OPENID
+  let doc
+  try {
+    doc = await db.collection(RECORDS).doc(event.id).get()
+  } catch (err) {
+    return fail('记录不存在或已被删除')
+  }
+  if (!doc.data) return fail('记录不存在或已被删除')
+  if (doc.data._openid !== openid) return fail('无权查看该记录')
+  const data = await attachImages([doc.data])
   return ok(data[0])
 }
 
@@ -144,10 +153,12 @@ async function remove(event) {
 }
 
 async function stats() {
+  const openid = cloud.getWXContext().OPENID
+  const where = { _openid: openid }
   const [recordCount, importedCount, vlogCount] = await Promise.all([
-    db.collection(RECORDS).count(),
-    db.collection(RECORDS).where({ type: 'imported' }).count(),
-    db.collection(VLOGS).count()
+    db.collection(RECORDS).where(where).count(),
+    db.collection(RECORDS).where({ ...where, type: 'imported' }).count(),
+    db.collection(VLOGS).where(where).count()
   ])
   return ok({
     records: recordCount.total,

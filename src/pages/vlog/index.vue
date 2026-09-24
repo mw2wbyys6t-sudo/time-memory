@@ -12,12 +12,19 @@
     <view v-if="loading" class="tm-empty">加载中…</view>
     <view v-else-if="!vlogs.length" class="tm-empty">还没有 Vlog，点上方按钮生成第一支吧</view>
     <view v-else>
-      <view v-for="item in vlogs" :key="item._id" class="vlog-card" @tap="openPreview(item)">
+      <view
+        v-for="item in vlogs"
+        :key="item._id"
+        class="vlog-card"
+        @tap="openPreview(item)"
+        @longpress="confirmRemove(item)"
+      >
         <image class="vlog-cover" :src="item.coverUrl || defaultCover" mode="aspectFill" />
         <view class="vlog-info">
           <text class="vlog-title">{{ item.title || '未命名 Vlog' }}</text>
           <text class="vlog-meta">{{ statusText(item) }} · {{ formatDate(item.createdAt) }}</text>
         </view>
+        <text v-if="item.status === 'failed'" class="vlog-retry" @tap.stop="retryCreate(item)">重试</text>
       </view>
     </view>
   </view>
@@ -81,6 +88,26 @@ export default {
     },
     openPreview(item) {
       uni.navigateTo({ url: `/pages/vlog/preview?id=${item._id}` })
+    },
+    confirmRemove(item) {
+      uni.showModal({
+        title: '删除 Vlog',
+        content: `确定删除「${item.title || '未命名 Vlog'}」吗？`,
+        success: async (res) => {
+          if (!res.confirm) return
+          try {
+            await callFunction('vlog', { action: 'remove', id: item._id })
+            uni.showToast({ title: '已删除', icon: 'success' })
+            this.loadVlogs()
+          } catch (err) {
+            uni.showToast({ title: '删除失败', icon: 'none' })
+            console.error(err)
+          }
+        }
+      })
+    },
+    retryCreate(item) {
+      uni.navigateTo({ url: `/pages/vlog/preview?id=${item._id}` })
     }
   }
 }
@@ -141,5 +168,14 @@ export default {
   margin-top: 12rpx;
   font-size: 24rpx;
   color: #9aa0b4;
+}
+
+.vlog-retry {
+  padding: 8rpx 20rpx;
+  margin-left: 16rpx;
+  font-size: 24rpx;
+  color: #7c6cf0;
+  background-color: rgba(124, 108, 240, 0.1);
+  border-radius: 999rpx;
 }
 </style>

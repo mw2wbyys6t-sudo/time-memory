@@ -17,6 +17,7 @@
         class="media-item"
         :src="img"
         mode="aspectFill"
+        @tap.stop="previewImage(index)"
       />
     </view>
 
@@ -65,6 +66,9 @@ export default {
   methods: {
     handleTap() {
       this.$emit('tap', this.record)
+    },
+    previewImage(index) {
+      uni.previewImage({ urls: this.images, current: this.images[index] })
     }
   }
 }

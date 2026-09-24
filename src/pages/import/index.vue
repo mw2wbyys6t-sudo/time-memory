@@ -58,14 +58,16 @@ export default {
       form: {
         content: '',
         originalTime: '',
-        images: []
-      }
+        images: [],
+        imageFileIDs: []
+      },
+      ocrFileID: ''
     }
   },
   methods: {
     pickScreenshot() {
       uni.chooseImage({
-        count: 9,
+        count: 1,
         sizeType: ['compressed'],
         sourceType: ['album', 'camera'],
         success: async (res) => {
@@ -80,7 +82,9 @@ export default {
         const result = await recognizeScreenshot(filePath)
         this.form.content = result.content || ''
         this.form.originalTime = result.originalTime || ''
+        this.ocrFileID = result.fileID || ''
         this.form.images = [filePath]
+        this.form.imageFileIDs = this.ocrFileID ? [this.ocrFileID] : []
         this.fromScreenshot = true
         this.showForm = true
       } catch (err) {
@@ -94,6 +98,7 @@ export default {
     },
     startManual() {
       this.fromScreenshot = false
+      this.ocrFileID = ''
       this.showForm = true
     },
     chooseImage() {
@@ -103,11 +108,13 @@ export default {
         sourceType: ['album', 'camera'],
         success: (res) => {
           this.form.images = this.form.images.concat(res.tempFilePaths)
+          this.form.imageFileIDs = this.form.imageFileIDs.concat(new Array(res.tempFilePaths.length).fill(''))
         }
       })
     },
     removeImage(index) {
       this.form.images.splice(index, 1)
+      this.form.imageFileIDs.splice(index, 1)
     },
     async confirmImport() {
       if (!this.form.content.trim() && !this.form.images.length) {
@@ -118,9 +125,14 @@ export default {
       uni.showLoading({ title: '导入中…' })
       try {
         const fileIDs = []
-        for (const path of this.form.images) {
-          const fileID = await uploadFile(path, buildCloudPath('records', path))
-          fileIDs.push(fileID)
+        for (let i = 0; i < this.form.images.length; i++) {
+          const cached = this.form.imageFileIDs[i]
+          if (cached) {
+            fileIDs.push(cached)
+          } else {
+            const fileID = await uploadFile(this.form.images[i], buildCloudPath('records', this.form.images[i]))
+            fileIDs.push(fileID)
+          }
         }
         await callFunction('record', {
           action: 'create',

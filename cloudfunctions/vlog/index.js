@@ -33,8 +33,10 @@ async function resolveUrls(vlog) {
 }
 
 async function list() {
+  const openid = cloud.getWXContext().OPENID
   const res = await db
     .collection(VLOGS)
+    .where({ _openid: openid })
     .orderBy('createdAt', 'desc')
     .limit(50)
     .get()
@@ -44,14 +46,24 @@ async function list() {
 
 async function get(event) {
   if (!event.id) return fail('缺少 Vlog id')
-  const res = await db.collection(VLOGS).doc(event.id).get()
-  const data = await resolveUrls(res.data)
+  const openid = cloud.getWXContext().OPENID
+  let doc
+  try {
+    doc = await db.collection(VLOGS).doc(event.id).get()
+  } catch (err) {
+    return fail('Vlog 不存在或已被删除')
+  }
+  if (!doc.data) return fail('Vlog 不存在或已被删除')
+  if (doc.data._openid !== openid) return fail('无权查看该 Vlog')
+  const data = await resolveUrls(doc.data)
   return ok(data)
 }
 
 async function collectSourceRecords(limit) {
+  const openid = cloud.getWXContext().OPENID
   const recordRes = await db
     .collection(RECORDS)
+    .where({ _openid: openid })
     .orderBy('originalTime', 'desc')
     .limit(limit)
     .get()
@@ -77,7 +89,7 @@ async function generateVideo(source, options) {
   if (!provider) {
     return {
       status: 'failed',
-      message: '尚未接入 AI 视频生成服务，请先配置 VLOG_PROVIDER 与对应密钥'
+      message: '尚未接入 AI 视频生成服务，请先配置 VLOG_PROVIDER 与对应密钥（参见云函数环境变量）'
     }
   }
   return {
@@ -109,6 +121,7 @@ async function create(event) {
     duration: 0,
     status: 'generating',
     config: event.config || {},
+    errorMessage: '',
     createdAt: now,
     updatedAt: now
   }
@@ -135,6 +148,31 @@ async function create(event) {
   return ok({ id: vlogId, status: result.status, message: result.message || '' })
 }
 
+async function remove(event) {
+  if (!event.id) return fail('缺少 Vlog id')
+  const openid = cloud.getWXContext().OPENID
+  let doc
+  try {
+    doc = await db.collection(VLOGS).doc(event.id).get()
+  } catch (err) {
+    return fail('Vlog 不存在或已被删除')
+  }
+  if (!doc.data || doc.data._openid !== openid) {
+    return fail('无权删除该 Vlog')
+  }
+
+  const fileList = [doc.data.videoFileID, doc.data.coverFileID].filter(Boolean)
+  await db.collection(VLOGS).doc(event.id).remove()
+  if (fileList.length) {
+    try {
+      await cloud.deleteFile({ fileList })
+    } catch (err) {
+      console.warn('[vlog] delete file failed', err)
+    }
+  }
+  return ok({ id: event.id })
+}
+
 exports.main = async (event) => {
   try {
     switch (event.action) {
@@ -144,6 +182,8 @@ exports.main = async (event) => {
         return await get(event)
       case 'create':
         return await create(event)
+      case 'remove':
+        return await remove(event)
       default:
         return fail(`未知 action: ${event.action}`)
     }
