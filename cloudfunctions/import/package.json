@@ -1,0 +1,9 @@
+{
+  "name": "import",
+  "version": "1.0.0",
+  "description": "朋友圈截图识别导入",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationBarTitleText": "时光记忆",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/vlog/index",
+      "style": {
+        "navigationBarTitleText": "我的 Vlog"
+      }
+    },
+    {
+      "path": "pages/mine/index",
+      "style": {
+        "navigationBarTitleText": "我的"
+      }
+    },
+    {
+      "path": "pages/create/index",
+      "style": {
+        "navigationBarTitleText": "记录此刻"
+      }
+    },
+    {
+      "path": "pages/import/index",
+      "style": {
+        "navigationBarTitleText": "导入朋友圈"
+      }
+    },
+    {
+      "path": "pages/record/detail",
+      "style": {
+        "navigationBarTitleText": "记录详情"
+      }
+    },
+    {
+      "path": "pages/vlog/preview",
+      "style": {
+        "navigationBarTitleText": "Vlog 预览"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "时光记忆",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "backgroundColor": "#F7F8FC"
+  },
+  "tabBar": {
+    "color": "#9AA0B4",
+    "selectedColor": "#7C6CF0",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "时光"
+      },
+      {
+        "pagePath": "pages/vlog/index",
+        "text": "Vlog"
+      },
+      {
+        "pagePath": "pages/mine/index",
+        "text": "我的"
+      }
+    ]
+  }
+}

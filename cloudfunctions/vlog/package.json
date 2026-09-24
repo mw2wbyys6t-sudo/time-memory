@@ -1,0 +1,9 @@
+{
+  "name": "vlog",
+  "version": "1.0.0",
+  "description": "Vlog 生成与管理",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}
